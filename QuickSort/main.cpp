@@ -49,7 +49,7 @@ static int thread_counter = 1;
 template<typename T>
 std::list<T> parallel_quick_sort(std::list<T> input)
 {
-	std::cout << "parallel_quick_sort list size = " << input.size() << std::endl;
+	//std::cout << "parallel_quick_sort list size = " << input.size() << std::endl;
 	thread_counter++;
     if(input.empty())
     {
@@ -64,13 +64,43 @@ std::list<T> parallel_quick_sort(std::list<T> input)
     lower_part.splice(lower_part.end(),input,input.begin(),
         divide_point);
     
-   	std::future<std::list<T> > new_lower(
-	std::async(&parallel_quick_sort<T>,std::move(lower_part)));
-	
-    auto new_higher(
-        parallel_quick_sort(std::move(input)));
-    result.splice(result.end(),new_higher);
-    result.splice(result.begin(),new_lower.get());
+    if (lower_part.size() <= 10000)
+    {
+    	auto new_lower(
+        	sequential_quick_sort(std::move(lower_part)));
+        	
+        if (input.size() > 1)
+        {
+        	auto new_higher(
+        	parallel_quick_sort(std::move(input)));
+        	
+        	result.splice(result.end(),new_higher);
+		}
+		else
+		{
+			result.splice(result.end(), input);
+		}
+
+        result.splice(result.begin(),new_lower);
+	}
+	else
+	{
+		std::future<std::list<T> > new_lower(
+			std::async(&parallel_quick_sort<T>,std::move(lower_part)));
+        if (input.size() > 1)
+        {
+        	auto new_higher(
+        	parallel_quick_sort(std::move(input)));
+        	
+        	result.splice(result.end(),new_higher);
+		}
+		else
+		{
+			result.splice(result.end(), input);
+		}
+    	result.splice(result.begin(),new_lower.get());
+	}
+    
     return result;
 }
 
@@ -78,10 +108,12 @@ std::list<T> parallel_quick_sort(std::list<T> input)
 
 int main(int argc, char** argv) 
 {
+	system("PAUSE");
+	
 	std::list<int> a_list, b_list;
 	std::srand(std::time(0)); // use current time as seed for random generator
     	
-	for (int i = 0; i < 10; ++i)
+	for (int i = 0; i < 5000000; ++i)
 	{
 		int value = std::rand();
 		a_list.push_back(value);
