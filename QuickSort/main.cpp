@@ -44,10 +44,13 @@ std::list<T> sequential_quick_sort(std::list<T> input)
     return result;
 }
 
+static int thread_counter = 1;
 
 template<typename T>
 std::list<T> parallel_quick_sort(std::list<T> input)
 {
+	std::cout << "parallel_quick_sort list size = " << input.size() << std::endl;
+	thread_counter++;
     if(input.empty())
     {
         return input;
@@ -60,8 +63,10 @@ std::list<T> parallel_quick_sort(std::list<T> input)
     std::list<T> lower_part;
     lower_part.splice(lower_part.end(),input,input.begin(),
         divide_point);
-    std::future<std::list<T> > new_lower(
-        std::async(&parallel_quick_sort<T>,std::move(lower_part)));
+    
+   	std::future<std::list<T> > new_lower(
+	std::async(&parallel_quick_sort<T>,std::move(lower_part)));
+	
     auto new_higher(
         parallel_quick_sort(std::move(input)));
     result.splice(result.end(),new_higher);
@@ -73,40 +78,57 @@ std::list<T> parallel_quick_sort(std::list<T> input)
 
 int main(int argc, char** argv) 
 {
-	std::list<int> a_list;
+	std::list<int> a_list, b_list;
 	std::srand(std::time(0)); // use current time as seed for random generator
     	
-	for (int i = 0; i < 5000; ++i)
+	for (int i = 0; i < 10; ++i)
 	{
-		a_list.push_back(std::rand());
+		int value = std::rand();
+		a_list.push_back(value);
+		b_list.push_back(value);
 	}
 	
-	std::list<int> b_list(a_list);
+	//std::list<int> b_list(a_list);
 	std::cout << "b_list.size() = " << b_list.size() << std::endl;
 	
     // record start time
     auto start = std::chrono::system_clock::now();
     // do some work
-    parallel_quick_sort(a_list);
+    a_list = parallel_quick_sort(a_list);
     
     // record end time
     auto end = std::chrono::system_clock::now();
     std::chrono::duration<double> diff = end-start;
     std::cout << "Time to sort a list of " 
               << a_list.size() << " ints : " << diff.count() << " s\n";
+              
+    std::cout << "Thread counter is " << thread_counter << std::endl;
 	
 		
     // record start time
-    start = std::chrono::system_clock::now();
-    std::cout << start << std::endl;
+    auto startb = std::chrono::system_clock::now();
+
     // do some work
-    sequential_quick_sort(b_list);
+    b_list = sequential_quick_sort(b_list);
     
     // record end time
-    end = std::chrono::system_clock::now();
-    diff = end-start;
-    std::cout << "Time to sort a list of " 
-              << a_list.size() << " ints : " << diff.count() << " s\n";
+    auto endb = std::chrono::system_clock::now();
+    std::chrono::duration<double> diffb = endb-startb;
+    std::cout << "Time to sort b list of " 
+              << b_list.size() << " ints : " << diffb.count() << " s\n";
+              
+    auto itrA = a_list.begin();
+    auto itrB = b_list.begin();
+    for (int i = 0; i < 10; i++)
+    {
+    	std::cout << *(itrA++) << " ";
+	}
+	std:: cout << std::endl;
+
+    for (int i = 0; i < 10; i++)
+    {
+    	std::cout << *(itrB++) << " ";
+	}
 	
 	return 0;
 }
